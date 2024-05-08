@@ -14,24 +14,24 @@ func main () {
 	*/
 	entries, err := os.ReadDir("../your_journals")
 	if len(os.Args) == 1 {
-		// show all journals
 		if err != nil {
 			log.Fatal(err)
 		}
 	
+		// show all journals
 		for _, e := range entries {
 			fmt.Println(e.Name())
 		}
 
 	} else if len(os.Args) == 2 {
 		if os.Args[1] == "-m"{
-			// show me list of all journals in order of last modified
+			// TODO: show me list of all journals in order of last modified
 			for _, e := range entries {
 				fmt.Println(e.Name())
 			}
 
 		} else if os.Args[1] == "-c" {
-			// show me list of all journals in order of last created
+			// TODO: show me list of all journals in order of last created
 			for _, e := range entries {
 				fmt.Println(e.Name())
 			}
