@@ -1,6 +1,6 @@
 package main
 
-import(
+import (
 	"fmt"
 	"io"
 	"os"
@@ -95,56 +95,34 @@ func (m model) View() string {
 	return "\n" + m.list.View()
 }
 
-func main () {
-	/* take in command line arguments
-	User inputs:
-		ledgers -> make a new ledger named today's date
-		ledger "new Doc"  -> make a new ledger named new Doc
-	*/
-	entries, _ := os.ReadDir("../your_journals")
-	var items []list.Item
-	for _, e := range entries {
-		items = append( items, item(e.Name()) )
+func main() {
+	items := []list.Item{
+		item("Ramen"),
+		item("Tomato Soup"),
+		item("Hamburgers"),
+		item("Cheeseburgers"),
+		item("Currywurst"),
+		item("Okonomiyaki"),
+		item("Pasta"),
+		item("Fillet Mignon"),
+		item("Caviar"),
+		item("Just Wine"),
 	}
 
-	if len(os.Args) == 1 {
-	
-		// show all journals
-		for _, e := range entries {
-			fmt.Println(e.Name())
-		}
+	const defaultWidth = 20
 
-		const defaultWidth = 20
+	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
+	l.Title = "What do you want for dinner?"
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(false)
+	l.Styles.Title = titleStyle
+	l.Styles.PaginationStyle = paginationStyle
+	l.Styles.HelpStyle = helpStyle
 
-		l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
-		l.Title = "What do you want for dinner?"
-		l.SetShowStatusBar(false)
-		l.SetFilteringEnabled(false)
-		l.Styles.Title = titleStyle
-		l.Styles.PaginationStyle = paginationStyle
-		l.Styles.HelpStyle = helpStyle
+	m := model{list: l}
 
-		m := model{list: l}
-
-
-		if _, err := tea.NewProgram(m).Run(); err != nil {
-			fmt.Println("Error running program:", err)
-			os.Exit(1)
-		}
-
-
-	} else if len(os.Args) == 2 {
-		if os.Args[1] == "-m"{
-			// TODO: show me list of all journals in order of last modified
-			for _, e := range entries {
-				fmt.Println(e.Name())
-			}
-
-		} else if os.Args[1] == "-c" {
-			// TODO: show me list of all journals in order of last created
-			for _, e := range entries {
-				fmt.Println(e.Name())
-			}
-		}
+	if _, err := tea.NewProgram(m).Run(); err != nil {
+		fmt.Println("Error running program:", err)
+		os.Exit(1)
 	}
 }
