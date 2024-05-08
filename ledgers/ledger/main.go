@@ -26,14 +26,3 @@ func main () {
 		}
 	}
 }
-
-
-
-
-/* for ledgers:
-if os.Args[1] == "-m"{
-			// show me list of all journals in order of last modified
-		} else if os.Args[1] == "-c" {
-			// show me list of all journals in order of last created
-		}
-*/

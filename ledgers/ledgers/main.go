@@ -38,10 +38,3 @@ func main () {
 		}
 	}
 }
-
-
-
-
-/* for ledgers:
-
-*/
