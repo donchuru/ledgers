@@ -4,6 +4,7 @@ import(
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -87,13 +88,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("%s? Sounds good to me.", m.choice))
+		exepath := "C:\\Windows\\system32\\notepad.exe"
+    	file := "..\\your_journals\\" + m.choice
+    	cmd := exec.Command(exepath, file)
+		err := cmd.Start() // non-blocking program run
+		if err != nil {
+			return fmt.Sprintf("Error: %s", err)
+		}
 	}
 	if m.quitting {
+		// return quitTextStyle.Render("Not hungry? That’s cool.")
 		return quitTextStyle.Render("Not hungry? That’s cool.")
 	}
 	return "\n" + m.list.View()
 }
+
 
 func main () {
 	/* take in command line arguments
@@ -108,16 +117,11 @@ func main () {
 	}
 
 	if len(os.Args) == 1 {
-	
-		// show all journals
-		for _, e := range entries {
-			fmt.Println(e.Name())
-		}
-
 		const defaultWidth = 20
 
+		// initializing the TUI
 		l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
-		l.Title = "What do you want for dinner?"
+		l.Title = "Here are your journals so far:"
 		l.SetShowStatusBar(false)
 		l.SetFilteringEnabled(false)
 		l.Styles.Title = titleStyle
@@ -125,7 +129,6 @@ func main () {
 		l.Styles.HelpStyle = helpStyle
 
 		m := model{list: l}
-
 
 		if _, err := tea.NewProgram(m).Run(); err != nil {
 			fmt.Println("Error running program:", err)
