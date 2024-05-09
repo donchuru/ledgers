@@ -97,8 +97,7 @@ func (m model) View() string {
 		}
 	}
 	if m.quitting {
-		// return quitTextStyle.Render("Not hungry? That’s cool.")
-		return quitTextStyle.Render("Not hungry? That’s cool.")
+		return quitTextStyle.Render("Come back when you're ready to open your heart")
 	}
 	return "\n" + m.list.View()
 }
