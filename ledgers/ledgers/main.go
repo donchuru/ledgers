@@ -1,6 +1,6 @@
 package main
 
-import(
+import (
 	"fmt"
 	"io"
 	"os"
@@ -51,16 +51,17 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type model struct {
-	list     list.Model
-	choice   string
-	quitting bool
+	list       list.Model
+	choice     string
+	quitting   bool
+	fileOpened bool // flag to track if file has been opened
 }
 
-func (m model) Init() tea.Cmd {
+func (m *model) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
@@ -86,15 +87,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) View() string {
-	if m.choice != "" {
+func (m *model) View() string {
+	if m.choice != "" && !m.fileOpened {
 		exepath := "C:\\Windows\\system32\\notepad.exe"
-    	file := "..\\your_journals\\" + m.choice
-    	cmd := exec.Command(exepath, file)
+		file := "..\\your_journals\\" + m.choice
+		cmd := exec.Command(exepath, file)
 		err := cmd.Start() // non-blocking program run
 		if err != nil {
 			return fmt.Sprintf("Error: %s", err)
 		}
+		m.fileOpened = true // set the flag to true after opening the file
 	}
 	if m.quitting {
 		return quitTextStyle.Render("Come back when you're ready to open your heart")
@@ -102,8 +104,7 @@ func (m model) View() string {
 	return "\n" + m.list.View()
 }
 
-
-func main () {
+func main() {
 	/* take in command line arguments
 	User inputs:
 		ledgers -> make a new ledger named today's date
@@ -112,7 +113,7 @@ func main () {
 	entries, _ := os.ReadDir("../your_journals")
 	var items []list.Item
 	for _, e := range entries {
-		items = append( items, item(e.Name()) )
+		items = append(items, item(e.Name()))
 	}
 
 	if len(os.Args) == 1 {
@@ -129,14 +130,13 @@ func main () {
 
 		m := model{list: l}
 
-		if _, err := tea.NewProgram(m).Run(); err != nil {
+		if _, err := tea.NewProgram(&m).Run(); err != nil {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)
 		}
 
-
 	} else if len(os.Args) == 2 {
-		if os.Args[1] == "-m"{
+		if os.Args[1] == "-m" {
 			// TODO: show me list of all journals in order of last modified
 			for _, e := range entries {
 				fmt.Println(e.Name())
