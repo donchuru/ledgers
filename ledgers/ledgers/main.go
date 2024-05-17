@@ -2,106 +2,66 @@ package main
 
 import (
 	"fmt"
-	"io"
+	// "io"
 	"os"
 	"os/exec"
-	"strings"
+	// "strings"
 
-	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-const listHeight = 14
-
-var (
-	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
-	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
-	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
-	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
-)
-
-type item string
-
-func (i item) FilterValue() string { return "" }
-
-type itemDelegate struct{}
-
-func (d itemDelegate) Height() int                             { return 1 }
-func (d itemDelegate) Spacing() int                            { return 0 }
-func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
-func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(item)
-	if !ok {
-		return
-	}
-
-	str := fmt.Sprintf("%d. %s", index+1, i)
-
-	fn := itemStyle.Render
-	if index == m.Index() {
-		fn = func(s ...string) string {
-			return selectedItemStyle.Render("> " + strings.Join(s, " "))
-		}
-	}
-
-	fmt.Fprint(w, fn(str))
-}
+// boilerplate for table view
+var baseStyle = lipgloss.NewStyle().
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderForeground(lipgloss.Color("240"))
 
 type model struct {
-	list       list.Model
-	choice     string
-	quitting   bool
-	fileOpened bool // flag to track if file has been opened
+	table table.Model
 }
 
-func (m *model) Init() tea.Cmd {
-	return nil
-}
+func (m model) Init() tea.Cmd { return nil }
 
-func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width)
-		return m, nil
-
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "q", "ctrl+c":
-			m.quitting = true
-			return m, tea.Quit
-
-		case "enter":
-			i, ok := m.list.SelectedItem().(item)
-			if ok {
-				m.choice = string(i)
+		switch msg.String() {
+		case "esc":
+			if m.table.Focused() {
+				m.table.Blur()
+			} else {
+				m.table.Focus()
 			}
+		case "q", "ctrl+c":
 			return m, tea.Quit
+		case "enter":
+			exepath := "C:\\Windows\\system32\\notepad.exe"
+			file := fmt.Sprintf("..\\your_journals\\%s", m.table.SelectedRow()[1])
+			cmd := exec.Command(exepath, file)
+			err := cmd.Start() // Non-blocking program run
+			if err != nil {
+				fmt.Printf("Error: %s\n", err)
+				return m, nil
+			}
+			return m, tea.Batch(
+				tea.Printf("Opening up the journal: %s in Notepad!", m.table.SelectedRow()[1]),
+			)
 		}
 	}
-
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	m.table, cmd = m.table.Update(msg)
 	return m, cmd
 }
 
-func (m *model) View() string {
-	if m.choice != "" && !m.fileOpened {
-		exepath := "C:\\Windows\\system32\\notepad.exe"
-		file := "..\\your_journals\\" + m.choice
-		cmd := exec.Command(exepath, file)
-		err := cmd.Start() // non-blocking program run
-		if err != nil {
-			return fmt.Sprintf("Error: %s", err)
-		}
-		m.fileOpened = true // set the flag to true after opening the file
-	}
-	if m.quitting {
-		return quitTextStyle.Render("Come back when you're ready to open your heart")
-	}
-	return "\n" + m.list.View()
+func (m model) View() string {
+	return baseStyle.Render(m.table.View()) + "\n"
+}
+
+type FileDetail struct {
+	Name         string
+	LastModified string
+	Tags         string
 }
 
 func main() {
@@ -111,42 +71,82 @@ func main() {
 		ledger "new Doc"  -> make a new ledger named new Doc
 	*/
 	entries, _ := os.ReadDir("../your_journals")
-	var items []list.Item
+	// var items []list.Item
+	// for _, e := range entries {
+	// 	items = append(items, item(e.Name()))
+	// }
+
+	var fileDetails []FileDetail
 	for _, e := range entries {
-		items = append(items, item(e.Name()))
+		if !e.IsDir() {
+			info, err := e.Info()
+			if err != nil {
+				fmt.Printf("Error getting info for file %s: %s\n", e.Name(), err)
+				continue
+			}
+			tags := "random"
+			fileDetails = append(fileDetails, FileDetail{
+				Name:         e.Name(),
+				LastModified: info.ModTime().Format("2006-01-02"),
+				Tags:         tags,
+			})
+		}
+	}
+
+	fmt.Println(fileDetails)
+
+	columns := []table.Column{
+		{Title: "Date", Width: 15},
+		{Title: "Journal", Width: 30},
+		{Title: "tag", Width: 20},
+	}
+
+	rows := []table.Row{}
+	for _, file := range fileDetails {
+		rows = append(rows, table.Row{file.LastModified, file.Name, file.Tags})
 	}
 
 	if len(os.Args) == 1 {
-		const defaultWidth = 20
 
-		// initializing the TUI
-		l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
-		l.Title = "Here are your journals so far:"
-		l.SetShowStatusBar(false)
-		l.SetFilteringEnabled(false)
-		l.Styles.Title = titleStyle
-		l.Styles.PaginationStyle = paginationStyle
-		l.Styles.HelpStyle = helpStyle
-
-		m := model{list: l}
-
-		if _, err := tea.NewProgram(&m).Run(); err != nil {
+		// initialize table, style it and populate it
+		t := table.New(
+			table.WithColumns(columns),
+			table.WithRows(rows),
+			table.WithFocused(true),
+			table.WithHeight(7),
+		)
+		s := table.DefaultStyles()
+		s.Header = s.Header.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			BorderBottom(true).
+			Bold(false)
+		s.Selected = s.Selected.
+			Foreground(lipgloss.Color("229")).
+			Background(lipgloss.Color("57")).
+			Bold(false)
+		t.SetStyles(s)
+	
+		m := model{t}
+		if _, err := tea.NewProgram(m).Run(); err != nil {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)
 		}
-
-	} else if len(os.Args) == 2 {
-		if os.Args[1] == "-m" {
-			// TODO: show me list of all journals in order of last modified
-			for _, e := range entries {
-				fmt.Println(e.Name())
-			}
-
-		} else if os.Args[1] == "-c" {
-			// TODO: show me list of all journals in order of last created
-			for _, e := range entries {
-				fmt.Println(e.Name())
-			}
-		}
 	}
+
+
+	// } else if len(os.Args) == 2 {
+	// 	if os.Args[1] == "-m" {
+	// 		// TODO: show me list of all journals in order of last modified
+	// 		for _, e := range entries {
+	// 			fmt.Println(e.Name())
+	// 		}
+
+	// 	} else if os.Args[1] == "-c" {
+	// 		// TODO: show me list of all journals in order of last created
+	// 		for _, e := range entries {
+	// 			fmt.Println(e.Name())
+	// 		}
+	// 	}
+	// }
 }
