@@ -5,7 +5,9 @@ import (
 	// "io"
 	"os"
 	"os/exec"
-	// "strings"
+	"strings"
+	"sort"
+	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -67,8 +69,8 @@ type FileDetail struct {
 func main() {
 	/* take in command line arguments
 	User inputs:
-		ledgers -> make a new ledger named today's date
-		ledger "new Doc"  -> make a new ledger named new Doc
+		ledgers -> gives alphabetically sorted table view list of all journals
+		ledgers -m -> gives table sorted in order descending order of date
 	*/
 	entries, _ := os.ReadDir("../your_journals")
 	// var items []list.Item
@@ -84,7 +86,7 @@ func main() {
 				fmt.Printf("Error getting info for file %s: %s\n", e.Name(), err)
 				continue
 			}
-			tags := "random"
+			tags := extractTags(e.Name())
 			fileDetails = append(fileDetails, FileDetail{
 				Name:         e.Name(),
 				LastModified: info.ModTime().Format("2006-01-02"),
@@ -93,12 +95,23 @@ func main() {
 		}
 	}
 
-	fmt.Println(fileDetails)
+	// fmt.Println(fileDetails)
 
 	columns := []table.Column{
 		{Title: "Date", Width: 15},
-		{Title: "Journal", Width: 30},
-		{Title: "tag", Width: 20},
+		{Title: "Journals", Width: 30},
+		{Title: "Tags", Width: 20},
+	}
+
+	if len(os.Args) == 1 { // sorted by alphabetical order
+		
+	} else if len(os.Args) == 2 && os.Args[1] == "-m" {
+		// Sort by date
+		sort.Slice(fileDetails[:], func(i, j int) bool {
+			ti, _ := time.Parse("2006-01-02", fileDetails[i].LastModified)
+			tj, _ := time.Parse("2006-01-02", fileDetails[j].LastModified)
+			return ti.After(tj)
+		})
 	}
 
 	rows := []table.Row{}
@@ -106,47 +119,40 @@ func main() {
 		rows = append(rows, table.Row{file.LastModified, file.Name, file.Tags})
 	}
 
-	if len(os.Args) == 1 {
+	// initialize table, style it and populate it
+	t := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(7),
+	)
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(false)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+	t.SetStyles(s)
 
-		// initialize table, style it and populate it
-		t := table.New(
-			table.WithColumns(columns),
-			table.WithRows(rows),
-			table.WithFocused(true),
-			table.WithHeight(7),
-		)
-		s := table.DefaultStyles()
-		s.Header = s.Header.
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("240")).
-			BorderBottom(true).
-			Bold(false)
-		s.Selected = s.Selected.
-			Foreground(lipgloss.Color("229")).
-			Background(lipgloss.Color("57")).
-			Bold(false)
-		t.SetStyles(s)
-	
-		m := model{t}
-		if _, err := tea.NewProgram(m).Run(); err != nil {
-			fmt.Println("Error running program:", err)
-			os.Exit(1)
-		}
+	m := model{t}
+	if _, err := tea.NewProgram(m).Run(); err != nil {
+		fmt.Println("Error running program:", err)
+		os.Exit(1)
 	}
+}
 
 
-	// } else if len(os.Args) == 2 {
-	// 	if os.Args[1] == "-m" {
-	// 		// TODO: show me list of all journals in order of last modified
-	// 		for _, e := range entries {
-	// 			fmt.Println(e.Name())
-	// 		}
-
-	// 	} else if os.Args[1] == "-c" {
-	// 		// TODO: show me list of all journals in order of last created
-	// 		for _, e := range entries {
-	// 			fmt.Println(e.Name())
-	// 		}
-	// 	}
-	// }
+// helper functions
+func extractTags(filename string) string {
+	// Placeholder logic for extracting tags from filename
+	// Adjust as needed based on your actual tagging convention
+	if strings.Contains(filename, "_") {
+		parts := strings.Split(filename, "_")
+		return strings.Join(parts[1:], ", ")
+	}
+	return "No Tags"
 }
