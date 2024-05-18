@@ -49,7 +49,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			return m, tea.Batch(
-				tea.Printf("Opening up the journal: %s in Notepad!", m.table.SelectedRow()[1]),
+				tea.Printf("Opening up %s in Notepad...", m.table.SelectedRow()[1]),
 			)
 		}
 	}
