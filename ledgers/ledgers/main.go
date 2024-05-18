@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	// "io"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"sort"
 	"time"
+	"bufio"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -78,6 +79,8 @@ func main() {
 	// 	items = append(items, item(e.Name()))
 	// }
 
+	// fmt.Println(entries)
+
 	var fileDetails []FileDetail
 	for _, e := range entries {
 		if !e.IsDir() {
@@ -86,7 +89,16 @@ func main() {
 				fmt.Printf("Error getting info for file %s: %s\n", e.Name(), err)
 				continue
 			}
-			tags := extractTags(e.Name())
+			// fmt.Println(e.Name())
+
+			// fetch location where all journals are stored
+			f, _ := os.Open("../config/init.txt")
+			scanner := bufio.NewScanner(f)
+			scanner.Scan()
+			scanner.Scan()
+			location := scanner.Text()
+
+			tags := extractTags(e.Name(), location + "\\")
 			fileDetails = append(fileDetails, FileDetail{
 				Name:         e.Name(),
 				LastModified: info.ModTime().Format("2006-01-02"),
@@ -147,12 +159,23 @@ func main() {
 
 
 // helper functions
-func extractTags(filename string) string {
-	// Placeholder logic for extracting tags from filename
-	// Adjust as needed based on your actual tagging convention
-	if strings.Contains(filename, "_") {
-		parts := strings.Split(filename, "_")
-		return strings.Join(parts[1:], ", ")
+func extractTags(filename string, location_appendage string) string {
+	// logic for extracting tags from the file itself
+	fileIO, err := os.OpenFile(location_appendage + filename, os.O_RDONLY, 0600)
+	if err != nil {
+		panic(err)
 	}
+	defer fileIO.Close()
+	rawBytes, err := io.ReadAll(fileIO)
+	if err != nil {
+		panic(err)
+	}
+	lines := strings.Split(string(rawBytes), "\n")
+	firstline := lines[0]
+	if strings.Contains(firstline, "tags:"){
+		firstlineSliced := strings.Split(firstline, ":")
+		return strings.ReplaceAll(firstlineSliced[1], " ", "")
+	}
+
 	return "No Tags"
 }
