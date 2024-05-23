@@ -1,23 +1,24 @@
 package main
 
-import(
+import (
+	"bufio"
 	"fmt"
 	"os"
-	"time"
-	"strings"
-	"bufio"
 	"os/exec"
+	"strings"
+	"time"
+
 	// "sort"
 	"slices"
 )
 
-func err_msg (e error) {
+func err_msg(e error) {
 	if e != nil {
 		fmt.Printf("Unable to write file: %v", e)
 	}
 }
 
-func main () {
+func main() {
 	/* take in command line arguments
 	User inputs:
 		ledger -> make a new ledger named today's date
@@ -35,15 +36,16 @@ func main () {
 	// fmt.Println(os.Args)
 	var filename string
 
+	// TODO: If file exists, ask if you should overwrite it
 	if len(os.Args) == 1 {
 		filename = time.Now().Format("2006-01-02")
-		err := os.WriteFile(location + "\\" + filename, []byte(time.Now().Format("Monday, Jan 2, 2006") + "\n"), 0755)
+		err := os.WriteFile(location+"\\"+filename, []byte(time.Now().Format("Monday, Jan 2, 2006")+"\n"), 0755)
 		err_msg(err)
 	} else if len(os.Args) > 2 && !slices.Contains(os.Args, "-t") {
 		// fmt.Println(location)
 
 		filename = strings.Join(os.Args[1:], " ")
-		err := os.WriteFile(location + "\\" + filename, []byte(filename + "\n" + time.Now().Format("Monday, Jan 2, 2006") + "\n\n"), 0755)
+		err := os.WriteFile(location+"\\"+filename, []byte(filename+"\n"+time.Now().Format("Monday, Jan 2, 2006")+"\n\n"), 0755)
 		err_msg(err)
 
 	} else if slices.Contains(os.Args, "-t") {
@@ -62,7 +64,7 @@ func main () {
 
 		tags := strings.Join(os.Args[tIndex+1:], ", ")
 
-		err := os.WriteFile(location + "\\" + filename, []byte("tags: " + tags + "\n" + filename + "\n" + time.Now().Format("Monday, Jan 2, 2006") + "\n\n"), 0755)
+		err := os.WriteFile(location+"\\"+filename, []byte("tags: "+tags+"\n"+filename+"\n"+time.Now().Format("Monday, Jan 2, 2006")+"\n\n"), 0755)
 		err_msg(err)
 
 	}
