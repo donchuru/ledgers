@@ -69,6 +69,7 @@ func main() {
 
 	}
 
+	fmt.Println("Don't forget to save (Ctrl + S)")
 	// open the file
 	exepath := "C:\\Windows\\system32\\notepad.exe"
 	file := fmt.Sprintf(location + "\\" + filename)
