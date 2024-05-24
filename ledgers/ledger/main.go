@@ -18,6 +18,7 @@ func err_msg(e error) {
 	}
 }
 
+
 func main() {
 	/* take in command line arguments
 	User inputs:
@@ -36,17 +37,51 @@ func main() {
 	// fmt.Println(os.Args)
 	var filename string
 
-	// TODO: If file exists, ask if you should overwrite it
+	// check if file exists
+	fileExists := func(filepath string) bool {
+		_, err := os.Stat(filepath)
+		return !os.IsNotExist(err)
+	}
+
+	// append to existing file
+	appendToFile := func(filepath string, content string) {
+		f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, 0600)
+		if err != nil {
+			err_msg(err)
+			return
+		}
+		defer f.Close()
+
+		if _, err = f.WriteString(content); err != nil {
+			err_msg(err)
+		}
+	}
+
 	if len(os.Args) == 1 {
 		filename = time.Now().Format("2006-01-02")
-		err := os.WriteFile(location+"\\"+filename, []byte(time.Now().Format("Monday, Jan 2, 2006")+"\n"), 0755)
-		err_msg(err)
+		filepath := location+"\\"+filename
+		content := time.Now().Format("Monday, Jan 2, 2006")+"\n\n"
+		
+		if fileExists(filepath) {
+			appendToFile(filepath, "\n\n" + content)
+		} else {
+			err := os.WriteFile(filepath, []byte(content), 0755)
+			err_msg(err)
+		}
+
 	} else if len(os.Args) > 2 && !slices.Contains(os.Args, "-t") {
 		// fmt.Println(location)
 
 		filename = strings.Join(os.Args[1:], " ")
-		err := os.WriteFile(location+"\\"+filename, []byte(filename+"\n"+time.Now().Format("Monday, Jan 2, 2006")+"\n\n"), 0755)
-		err_msg(err)
+		filepath := location+"\\"+filename
+		content := time.Now().Format("Monday, Jan 2, 2006") + "\n\n"
+		
+		if fileExists(filepath) {
+			appendToFile(filepath, "\n\n" + content)
+		} else {
+			err := os.WriteFile(filepath, []byte(content), 0755)
+			err_msg(err)
+		}
 
 	} else if slices.Contains(os.Args, "-t") {
 		tIndex := findIndex(os.Args, "-t")
@@ -63,17 +98,23 @@ func main() {
 		}
 
 		tags := strings.Join(os.Args[tIndex+1:], ", ")
+		filepath := location+"\\"+filename
+		content := time.Now().Format("Monday, Jan 2, 2006") + "\n\n"
 
-		err := os.WriteFile(location+"\\"+filename, []byte("tags: "+tags+"\n"+filename+"\n"+time.Now().Format("Monday, Jan 2, 2006")+"\n\n"), 0755)
-		err_msg(err)
-
+		if fileExists(filepath) {
+			content = "\n\n" + "tags: " + tags + "\n" + content
+			appendToFile(filepath, content)
+		} else {
+			err := os.WriteFile(filepath, []byte("tags: " + tags + "\n" + filename+ "\n"+ content +"\n"), 0755)
+			err_msg(err)
+		}
 	}
 
 	fmt.Println("Don't forget to save (Ctrl + S)")
-	// open the file
-	exepath := "C:\\Windows\\system32\\notepad.exe"
+	// open the file in Notepad
+	notepad_path := "C:\\Windows\\system32\\notepad.exe"
 	file := fmt.Sprintf(location + "\\" + filename)
-	cmd := exec.Command(exepath, file)
+	cmd := exec.Command(notepad_path, file)
 	err2 := cmd.Start() // Non-blocking program run
 	if err2 != nil {
 		fmt.Printf("Error: %s\n", err2)
