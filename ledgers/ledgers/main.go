@@ -9,16 +9,17 @@ import (
 	"sort"
 	"time"
 	"bufio"
+	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
+var location string
+
 // boilerplate for table view
-var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("240"))
+var baseStyle = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("240"))
 
 type model struct {
 	table table.Model
@@ -41,7 +42,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			exepath := "C:\\Windows\\system32\\notepad.exe"
-			file := fmt.Sprintf("..\\your_journals\\%s", m.table.SelectedRow()[1])
+			file := fmt.Sprintf(location + "\\%s", m.table.SelectedRow()[1])
 			cmd := exec.Command(exepath, file)
 			err := cmd.Start() // Non-blocking program run
 			if err != nil {
@@ -67,13 +68,34 @@ type FileDetail struct {
 	Tags         string
 }
 
+// error checker
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func main() {
 	/* take in command line arguments
 	User inputs:
 		ledgers -> gives alphabetically sorted table view list of all journals
 		ledgers -m -> gives table sorted in order descending order of date
 	*/
-	entries, _ := os.ReadDir("../your_journals")
+
+	// Resolve the home directory
+	homeDir, err := os.UserHomeDir()
+	check(err)
+
+	// Define the configuration file path
+	configFilePath := filepath.Join(homeDir, ".ledgers_config", "init.txt")
+
+	f, _ := os.Open(configFilePath)
+	scanner := bufio.NewScanner(f)
+	scanner.Scan()
+	scanner.Scan()
+	location = scanner.Text()
+
+	entries, _ := os.ReadDir(location)
 	// var items []list.Item
 	// for _, e := range entries {
 	// 	items = append(items, item(e.Name()))
@@ -90,13 +112,6 @@ func main() {
 				continue
 			}
 			// fmt.Println(e.Name())
-
-			// fetch location where all journals are stored
-			f, _ := os.Open("../config/init.txt")
-			scanner := bufio.NewScanner(f)
-			scanner.Scan()
-			scanner.Scan()
-			location := scanner.Text()
 
 			tags := extractTags(e.Name(), location + "\\")
 			fileDetails = append(fileDetails, FileDetail{
@@ -159,6 +174,7 @@ func main() {
 
 
 // helper functions
+
 func extractTags(filename string, location_appendage string) string {
 	// logic for extracting tags from the file itself
 	fileIO, err := os.OpenFile(location_appendage + filename, os.O_RDONLY, 0600)

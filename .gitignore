@@ -1,2 +1,4 @@
 ledgers/your_journals/
 test-programs/
+dist/
+limitations.txt

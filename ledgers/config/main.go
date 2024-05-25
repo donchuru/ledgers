@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"bufio"
+	"path/filepath"
 )
 
 // error checker
@@ -31,7 +32,19 @@ func main(){
 		// fmt.Printf("Input was: %q\n", location)
 	}
 
+	// Resolve the home directory
+	homeDir, err := os.UserHomeDir()
+	check(err)
+
+	// Define the configuration file path
+	configDir := filepath.Join(homeDir, ".ledgers_config")
+	configFilePath := filepath.Join(configDir, "init.txt")
+
+	// Ensure the directory exists
+	err = os.MkdirAll(configDir, 0755)
+	check(err)
+
 	d1 := []byte(name + "\n" + location)
-    err := os.WriteFile("./init.txt", d1, 0644)
-    check(err)
+    err2 := os.WriteFile(configFilePath, d1, 0644)
+    check(err2)
 }

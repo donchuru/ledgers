@@ -7,17 +7,20 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"path/filepath"
 
 	// "sort"
 	"slices"
 )
 
-func err_msg(e error) {
+var location string
+
+// error checker
+func check(e error) {
 	if e != nil {
-		fmt.Printf("Unable to write file: %v", e)
+		panic(e)
 	}
 }
-
 
 func main() {
 	/* take in command line arguments
@@ -28,11 +31,17 @@ func main() {
 	*/
 
 	// fetch location where all journals are stored
-	f, _ := os.Open("../config/init.txt")
+	homeDir, err := os.UserHomeDir()
+	check(err)
+
+	// Define the configuration file path
+	configFilePath := filepath.Join(homeDir, ".ledgers_config", "init.txt")
+
+	f, _ := os.Open(configFilePath)
 	scanner := bufio.NewScanner(f)
 	scanner.Scan()
 	scanner.Scan()
-	location := scanner.Text()
+	location = scanner.Text()
 
 	// fmt.Println(os.Args)
 	var filename string
@@ -47,13 +56,13 @@ func main() {
 	appendToFile := func(filepath string, content string) {
 		f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
-			err_msg(err)
+			check(err)
 			return
 		}
 		defer f.Close()
 
 		if _, err = f.WriteString(content); err != nil {
-			err_msg(err)
+			check(err)
 		}
 	}
 
@@ -66,7 +75,7 @@ func main() {
 			appendToFile(filepath, "\n\n" + content)
 		} else {
 			err := os.WriteFile(filepath, []byte(content), 0755)
-			err_msg(err)
+			check(err)
 		}
 
 	} else if len(os.Args) > 2 && !slices.Contains(os.Args, "-t") {
@@ -80,7 +89,7 @@ func main() {
 			appendToFile(filepath, "\n\n" + content)
 		} else {
 			err := os.WriteFile(filepath, []byte(content), 0755)
-			err_msg(err)
+			check(err)
 		}
 
 	} else if slices.Contains(os.Args, "-t") {
@@ -106,7 +115,7 @@ func main() {
 			appendToFile(filepath, content)
 		} else {
 			err := os.WriteFile(filepath, []byte("tags: " + tags + "\n" + filename+ "\n"+ content +"\n"), 0755)
-			err_msg(err)
+			check(err)
 		}
 	}
 
