@@ -78,12 +78,14 @@ func main() {
 			check(err)
 		}
 
-	} else if len(os.Args) > 2 && !slices.Contains(os.Args, "-t") {
+	} else if len(os.Args) >= 2 && !slices.Contains(os.Args, "-t") {
 		// fmt.Println(location)
 
 		filename = strings.Join(os.Args[1:], " ")
 		filepath := location+"\\"+filename
 		content := time.Now().Format("Monday, Jan 2, 2006") + "\n\n"
+
+		// fmt.Println("filepath", filepath)
 		
 		if fileExists(filepath) {
 			appendToFile(filepath, "\n\n" + content)
@@ -123,6 +125,8 @@ func main() {
 	// open the file in Notepad
 	notepad_path := "C:\\Windows\\system32\\notepad.exe"
 	file := fmt.Sprintf(location + "\\" + filename)
+	// fmt.Println("filename:", filename)
+	// fmt.Println("filepath:", file)
 	cmd := exec.Command(notepad_path, file)
 	err2 := cmd.Start() // Non-blocking program run
 	if err2 != nil {
