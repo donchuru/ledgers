@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
-	"path/filepath"
-
 	// "sort"
-	"slices"
 )
 
 var location string
@@ -20,6 +18,80 @@ func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+// check if file exists
+func fileExists(filepath string) bool {
+	_, err := os.Stat(filepath)
+	return !os.IsNotExist(err)
+}
+
+// append to existing file
+func appendToFile(filepath string, content string) {
+	f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		check(err)
+		return
+	}
+	defer f.Close()
+
+	if _, err = f.WriteString(content); err != nil {
+		check(err)
+	}
+}
+
+type LedgerEntry struct {
+	filename string
+	tags     []string
+	content  string
+}
+
+func createLedgerEntry(args []string) LedgerEntry {
+	entry := LedgerEntry{
+		content: time.Now().Format("Monday, Jan 2, 2006") + "\n\n",
+	}
+
+	// Check for -t flag and extract tags
+	tIndex := findIndex(args, "-t")
+	if tIndex != -1 && tIndex < len(args)-1 {
+		entry.tags = args[tIndex+1:]
+		args = args[:tIndex] // Remove -t and tags from args
+	}
+
+	// Set filename based on arguments
+	if len(args) <= 1 {
+		entry.filename = time.Now().Format("2006-01-02") + ".txt"
+	} else {
+		entry.filename = strings.Join(args[1:], " ") + ".txt"
+	}
+
+	return entry
+}
+
+func (entry LedgerEntry) save(location string) error {
+	filepath := filepath.Join(location, entry.filename)
+	
+	// Prepare content with tags if present
+	content := entry.content
+	if len(entry.tags) > 0 {
+		content = "tags: " + strings.Join(entry.tags, ", ") + "\n" + entry.filename + "\n" + content
+	}
+
+	// Append or create file
+	if fileExists(filepath) {
+		separator := "\n\n"
+		if len(entry.tags) > 0 {
+			separator += "tags: " + strings.Join(entry.tags, ", ") + "\n"
+		}
+		appendToFile(filepath, separator + entry.content)
+	} else {
+		err := os.WriteFile(filepath, []byte(content), 0644)
+		if err != nil {
+			return err
+		}
+	}
+	
+	return nil
 }
 
 func main() {
@@ -43,94 +115,20 @@ func main() {
 	scanner.Scan()
 	location = scanner.Text()
 
-	// fmt.Println(os.Args)
-	var filename string
-
-	// check if file exists
-	fileExists := func(filepath string) bool {
-		_, err := os.Stat(filepath)
-		return !os.IsNotExist(err)
-	}
-
-	// append to existing file
-	appendToFile := func(filepath string, content string) {
-		f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, 0600)
-		if err != nil {
-			check(err)
-			return
-		}
-		defer f.Close()
-
-		if _, err = f.WriteString(content); err != nil {
-			check(err)
-		}
-	}
-
-	if len(os.Args) == 1 {
-		filename = time.Now().Format("2006-01-02")
-		filepath := filepath.Join(location, filename)
-		content := time.Now().Format("Monday, Jan 2, 2006")+"\n\n"
-		
-		if fileExists(filepath) {
-			appendToFile(filepath, "\n\n" + content)
-		} else {
-			err := os.WriteFile(filepath, []byte(content), 0755)
-			check(err)
-		}
-
-	} else if len(os.Args) >= 2 && !slices.Contains(os.Args, "-t") {
-		// fmt.Println(location)
-
-		filename = strings.Join(os.Args[1:], " ")
-		filepath := filepath.Join(location, filename)
-		content := time.Now().Format("Monday, Jan 2, 2006") + "\n\n"
-
-		// fmt.Println("filepath", filepath)
-		
-		if fileExists(filepath) {
-			appendToFile(filepath, "\n\n" + content)
-		} else {
-			err := os.WriteFile(filepath, []byte(content), 0755)
-			check(err)
-		}
-
-	} else if slices.Contains(os.Args, "-t") {
-		tIndex := findIndex(os.Args, "-t")
-		// fmt.Printf("tIndex: %d", tIndex)
-		if tIndex == -1 || tIndex == len(os.Args)-1 {
-			fmt.Println("Invalid usage: '-t' flag requires a tag argument")
-			return
-		}
-
-		if os.Args[1] == "-t" {
-			filename = time.Now().Format("2006-01-02")
-		} else {
-			filename = strings.Join(os.Args[1:tIndex], " ")
-		}
-
-		tags := strings.Join(os.Args[tIndex+1:], ", ")
-		filepath := filepath.Join(location, filename)
-		content := time.Now().Format("Monday, Jan 2, 2006") + "\n\n"
-
-		if fileExists(filepath) {
-			content = "\n\n" + "tags: " + tags + "\n" + content
-			appendToFile(filepath, content)
-		} else {
-			err := os.WriteFile(filepath, []byte("tags: " + tags + "\n" + filename+ "\n"+ content +"\n"), 0644)
-			check(err)
-		}
-	}
-
-	fmt.Println("Don't forget to save (Ctrl + S)")
-	// fmt.Println("filename:", filename)
-	// fmt.Println("filepath:", file)
-	cmd := exec.Command("open", "-a", "TextEdit", filepath.Join(location, filename))
-	err2 := cmd.Start() // Non-blocking program run
-	if err2 != nil {
-		fmt.Printf("Error: %s\n", err2)
+	entry := createLedgerEntry(os.Args)
+	err = entry.save(location)
+	if err != nil {
+		fmt.Printf("Error saving ledger: %v\n", err)
 		return
 	}
 
+	fmt.Println("Don't forget to save (Ctrl + S)")
+	cmd := exec.Command("open", "-a", "TextEdit", filepath.Join(location, entry.filename))
+	err = cmd.Start()
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return
+	}
 }
 
 // helper functions

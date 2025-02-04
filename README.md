@@ -21,3 +21,10 @@ Running `ledgers` shows you a list of your journal so far with details like the 
 `ledger newDoc -t random` creates a journal titled "newDoc" with the "random" tag.
 As of now, tags can only be one word. To add multiple word tags, include a space before each tag e.g. `ledger newDoc -t random insight`
 A work around for multi-word tags is to underscore them e.g. `ledger newDoc -t dream_interpretations day_after_insomnia`
+
+
+# When Developing
+After developing, run `make build` from the root folder to replace binaries in `mac_dist`.
+This will automatically update the binaries running on my machine since my PATH points to a symlink of this directory.  
+
+Test as needed.
