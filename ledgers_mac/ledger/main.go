@@ -40,6 +40,16 @@ func appendToFile(filepath string, content string) {
 	}
 }
 
+// helper functions
+func findIndex(slice []string, item string) int {
+	for i, s := range slice {
+		if s == item {
+			return i
+		}
+	}
+	return -1
+}
+
 type LedgerEntry struct {
 	filename string
 	tags     []string
@@ -129,14 +139,4 @@ func main() {
 		fmt.Printf("Error: %s\n", err)
 		return
 	}
-}
-
-// helper functions
-func findIndex(slice []string, item string) int {
-	for i, s := range slice {
-		if s == item {
-			return i
-		}
-	}
-	return -1
 }
