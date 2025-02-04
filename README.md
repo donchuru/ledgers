@@ -7,7 +7,6 @@ P.S. *"ledgers" === "journals"*. I may use them interchangeably
 ## How to Use
 ### Set up config details
 Run `ledgers-config` to add config details like your name and the path to the directory where you'd like to keep your journals.
-\<Insert demo pic>
 
 ### Commands
 Running `ledgers` shows you a list of your journal so far with details like the date it was last modified and the tags for each journal.

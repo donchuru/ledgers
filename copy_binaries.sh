@@ -8,9 +8,9 @@ SOURCE_DIR="./ledgers_mac"
 DEST_DIR="./ledgers_mac/mac_dist"
 
 # Copy config binary
-if [ -f "$SOURCE_DIR/config/config" ]; then
-    echo "Copying config binary..."
-    cp "$SOURCE_DIR/config/config" "$DEST_DIR/"
+if [ -f "$SOURCE_DIR/config/ledgers-config" ]; then
+    echo "Copying ledgers-config binary..."
+    cp "$SOURCE_DIR/config/ledgers-config" "$DEST_DIR/"
 fi
 
 # Copy ledger binary
