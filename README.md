@@ -2,7 +2,7 @@
 Ledgers is a journaling CLI tool.
 This is how I manage my journals on my Windows machine.
 
-P.S. "ledgers" === "journals". I may use them interchangeably
+P.S. *"ledgers" === "journals"*. I may use them interchangeably
 
 ## How to Use
 ### Set up config details
@@ -11,10 +11,10 @@ Run `ledgers-config` to add config details like your name and the path to the di
 
 ### Commands
 Running `ledgers` shows you a list of your journal so far with details like the date it was last modified and the tags for each journal.
-\<Insert demo pic>
+
+![ScreenRecording2025-02-03at7 11 01PM-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/57010e18-83ee-4aa4-9939-1c2938339314)
 
 `ledgers -m` shows a list of your journals (and corresponding details), sorted by date of last modification.
-\<Insert demo pic>
 
 `ledger newDoc` creates a journal titled "newDoc"
 
