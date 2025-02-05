@@ -5,6 +5,9 @@ This is how I manage my journals on my Windows machine.
 P.S. *"ledgers" === "journals"*. I may use them interchangeably
 
 ## How to Use
+1. Download `mac_dist` from the `ledgers_mac` folder.  
+2. Add it to your PATH environment variable by adding `export PATH="/your/folder/path:$PATH"` to your `.zshrc` file.
+
 ### Set up config details
 Run `ledgers-config` to add config details like your name and the path to the directory where you'd like to keep your journals.
 
