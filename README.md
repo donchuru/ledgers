@@ -1,10 +1,10 @@
 # Ledgers
-Ledgers is a journaling CLI tool.
-This is how I manage my journals on my Windows machine.
+Ledgers is a journaling TUI application for Mac and Windows.\
+*N.B. I do not update the Windows distribution frequently so it might be a little outdated*
 
 P.S. *"ledgers" === "journals"*. I may use them interchangeably
 
-## How to Use
+## How to Use (Mac)
 1. Download `mac_dist` from the `ledgers_mac` folder.  
 2. Add it to your PATH environment variable by adding `export PATH="/your/folder/path:$PATH"` to your `.zshrc` file.
 
