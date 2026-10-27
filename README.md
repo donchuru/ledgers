@@ -18,6 +18,9 @@ Running `ledgers` shows you a list of your journal so far with details like the 
 
 `ledgers -m` shows a list of your journals (and corresponding details), sorted by date of last modification.
 
+Start typing to search: the list narrows as you type to journals whose title or tags fuzzy-match your search, best match first (e.g. `gbw` finds "on going back to work").
+Use ↑/↓ to move, `enter` to open the selected journal in TextEdit, `esc` to clear the search (or quit if it's already empty), and `ctrl+c` to quit.
+
 `ledger newDoc` creates a journal titled "newDoc"
 
 `ledger newDoc -t random` creates a journal titled "newDoc" with the "random" tag.
