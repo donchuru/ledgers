@@ -21,8 +21,24 @@ Running `ledgers` shows you a list of your journal so far with details like the 
 `ledger newDoc` creates a journal titled "newDoc"
 
 `ledger newDoc -t random` creates a journal titled "newDoc" with the "random" tag.
-As of now, tags can only be one word. To add multiple word tags, include a space before each tag e.g. `ledger newDoc -t random insight`
-A work around for multi-word tags is to underscore them e.g. `ledger newDoc -t dream_interpretations day_after_insomnia`
+To add multiple tags, separate them with spaces e.g. `ledger newDoc -t random insight`. Quote multi-word tags e.g. `ledger newDoc -t "dream interpretations" insight`.
+Running `ledger` on an existing journal adds a new dated entry, and any `-t` tags are added to its header.
+
+### Journal format
+Every journal starts with a header:
+```
+----------------------------------------------------
+Title:   newDoc
+Created: 2024-09-09
+Tags:    random, dream interpretations
+----------------------------------------------------
+```
+You can edit the header by hand (e.g. to add tags). Keep tags comma-separated.
+
+Journals created before headers existed can be converted once (back up your journals folder first):
+```
+go run ./ledgers_mac/migrate_headers /path/to/your/journals
+```
 
 
 # When Developing

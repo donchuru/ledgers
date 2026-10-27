@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 	// "sort"
+
+	"github.com/donchuru/ledgers/ledgers_mac/header"
 )
 
 var location string
@@ -17,26 +19,6 @@ var location string
 func check(e error) {
 	if e != nil {
 		panic(e)
-	}
-}
-
-// check if file exists
-func fileExists(filepath string) bool {
-	_, err := os.Stat(filepath)
-	return !os.IsNotExist(err)
-}
-
-// append to existing file
-func appendToFile(filepath string, content string) {
-	f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		check(err)
-		return
-	}
-	defer f.Close()
-
-	if _, err = f.WriteString(content); err != nil {
-		check(err)
 	}
 }
 
@@ -53,13 +35,10 @@ func findIndex(slice []string, item string) int {
 type LedgerEntry struct {
 	filename string
 	tags     []string
-	content  string
 }
 
 func createLedgerEntry(args []string) LedgerEntry {
-	entry := LedgerEntry{
-		content: time.Now().Format("Monday, Jan 2, 2006") + "\n\n",
-	}
+	entry := LedgerEntry{}
 
 	// Check for -t flag and extract tags
 	tIndex := findIndex(args, "-t")
@@ -80,28 +59,30 @@ func createLedgerEntry(args []string) LedgerEntry {
 
 func (entry LedgerEntry) save(location string) error {
 	filepath := filepath.Join(location, entry.filename)
-	
-	// Prepare content with tags if present
-	content := entry.content
-	if len(entry.tags) > 0 {
-		content = "tags: " + strings.Join(entry.tags, ", ") + "\n" + entry.filename + "\n" + content
-	}
+	title := strings.TrimSuffix(entry.filename, ".txt")
 
-	// Append or create file
-	if fileExists(filepath) {
-		separator := "\n\n"
-		if len(entry.tags) > 0 {
-			separator += "tags: " + strings.Join(entry.tags, ", ") + "\n"
-		}
-		appendToFile(filepath, separator + entry.content)
-	} else {
-		err := os.WriteFile(filepath, []byte(content), 0644)
+	// New journals get a fresh header; existing ones keep theirs (or get one
+	// built from the old format) and have the new entry appended
+	h := header.Header{Title: title, Created: time.Now().Format(header.DateLayout)}
+	body := "\n"
+	info, err := os.Stat(filepath)
+	if err == nil {
+		raw, err := os.ReadFile(filepath)
 		if err != nil {
 			return err
 		}
+		var ok bool
+		if h, body, ok = header.Parse(string(raw)); !ok {
+			h, body = header.FromLegacy(title, string(raw), info.ModTime())
+		}
+		body += "\n\n"
+	} else if !os.IsNotExist(err) {
+		return err
 	}
-	
-	return nil
+	h.AddTags(entry.tags...)
+
+	content := h.String() + body + time.Now().Format(header.StampLayout) + "\n\n"
+	return os.WriteFile(filepath, []byte(content), 0644)
 }
 
 func main() {

@@ -1,6 +1,6 @@
 module ledgers
 
-go 1.21.0
+go 1.22.6
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.25.0 // indirect
 	github.com/charmbracelet/lipgloss v0.9.1 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
+	github.com/donchuru/ledgers v0.0.0
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
@@ -24,3 +25,5 @@ require (
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
 )
+
+replace github.com/donchuru/ledgers => ../..

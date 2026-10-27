@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/donchuru/ledgers/ledgers_mac/header"
 )
 
 var location string
@@ -186,12 +187,9 @@ func extractTags(filename string, location_appendage string) string {
 	if err != nil {
 		panic(err)
 	}
-	lines := strings.Split(string(rawBytes), "\n")
-	firstline := lines[0]
-	if strings.Contains(firstline, "tags:"){
-		firstlineSliced := strings.Split(firstline, ":")
-		return strings.ReplaceAll(firstlineSliced[1], " ", "")
+	h, _, ok := header.Parse(string(rawBytes))
+	if !ok || len(h.Tags) == 0 {
+		return "No Tags"
 	}
-
-	return "No Tags"
+	return strings.Join(h.Tags, ", ")
 }
