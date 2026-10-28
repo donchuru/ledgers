@@ -17,6 +17,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/donchuru/ledgers/ledgers_mac/header"
+	"github.com/donchuru/ledgers/ledgers_mac/web"
 	"github.com/sahilm/fuzzy"
 )
 
@@ -105,6 +106,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(
 				tea.Printf("Opening up '%s' in TextEdit...", row[1]),
 			)
+		case "tab":
+			row := m.table.SelectedRow()
+			if row == nil {
+				return m, nil
+			}
+			if err := web.Open(filepath.Join(location, row[1])); err != nil {
+				return m, tea.Printf("Error: %s", err)
+			}
+			return m, tea.Printf("Opening up '%s' in Chrome...", row[1])
 		}
 	}
 
@@ -127,7 +137,7 @@ func (m *model) applyFilter() {
 
 func (m model) View() string {
 	return baseStyle.Render(m.search.View()+"\n"+m.table.View()) + "\n" +
-		helpStyle.Render("↑/↓ move · enter open · esc clear/quit · ctrl+c quit") + "\n"
+		helpStyle.Render("↑/↓ move · enter open · tab open in chrome · esc clear/quit · ctrl+c quit") + "\n"
 }
 
 type FileDetail struct {
@@ -149,6 +159,7 @@ func main() {
 		ledgers -> gives alphabetically sorted table view list of all journals
 		ledgers -m -> gives table sorted in order descending order of date
 	*/
+	web.ServeIfRequested()
 
 	// Resolve the home directory
 	homeDir, err := os.UserHomeDir()

@@ -6,11 +6,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 	// "sort"
 
 	"github.com/donchuru/ledgers/ledgers_mac/header"
+	"github.com/donchuru/ledgers/ledgers_mac/web"
 )
 
 var location string
@@ -30,6 +32,15 @@ func findIndex(slice []string, item string) int {
 		}
 	}
 	return -1
+}
+
+// removeFlag returns args without flag, and whether flag was there
+func removeFlag(args []string, flag string) ([]string, bool) {
+	i := findIndex(args, flag)
+	if i == -1 {
+		return args, false
+	}
+	return slices.Delete(slices.Clone(args), i, i+1), true
 }
 
 type LedgerEntry struct {
@@ -91,7 +102,9 @@ func main() {
 		ledger -> make a new ledger named today's date
 		ledger "new Doc"  -> make a new ledger named new Doc
 		ledger "new Doc" -t life -> make a new ledger named new Doc with the life tag
+		ledger "new Doc" -web -> same, but write in Chrome instead of TextEdit
 	*/
+	web.ServeIfRequested()
 
 	// fetch location where all journals are stored
 	homeDir, err := os.UserHomeDir()
@@ -106,15 +119,26 @@ func main() {
 	scanner.Scan()
 	location = scanner.Text()
 
-	entry := createLedgerEntry(os.Args)
+	args, inBrowser := removeFlag(os.Args, "-web")
+	entry := createLedgerEntry(args)
 	err = entry.save(location)
 	if err != nil {
 		fmt.Printf("Error saving ledger: %v\n", err)
 		return
 	}
+	file := filepath.Join(location, entry.filename)
+
+	if inBrowser {
+		if err := web.Open(file); err != nil {
+			fmt.Printf("Error: %s\n", err)
+			return
+		}
+		fmt.Printf("Opening up '%s' in Chrome...\n", entry.filename)
+		return
+	}
 
 	fmt.Println("Don't forget to save (Ctrl + S)")
-	cmd := exec.Command("open", "-a", "TextEdit", filepath.Join(location, entry.filename))
+	cmd := exec.Command("open", "-a", "TextEdit", file)
 	err = cmd.Start()
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)

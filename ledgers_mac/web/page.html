@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+
+    <!-- Inter font, as on donchuru.github.io -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        background-color: #f9fafb;
+        color: #374151;
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 20vh 0;
+      }
+
+      main {
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 40rem;
+      }
+
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+
+      .meta {
+        display: flex;
+        gap: 0.5ch;
+        margin-top: 0.5rem;
+        color: #6b7280;
+      }
+
+      input,
+      textarea {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        outline: none;
+      }
+
+      input::placeholder {
+        color: #9ca3af;
+      }
+
+      #tags {
+        flex: 1;
+      }
+
+      #body {
+        display: block;
+        width: 100%;
+        min-height: 50vh;
+        margin-top: 2rem;
+        line-height: 1.7;
+        resize: none;
+        field-sizing: content; /* grow with the text instead of scrolling */
+      }
+
+      #status {
+        position: fixed;
+        bottom: 1rem;
+        right: 1.5rem;
+        font-size: 0.875rem;
+        color: #9ca3af;
+      }
+
+      #status.error {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>{{.Title}}</h1>
+      <div class="meta">
+        <span>{{.Created}} ·</span>
+        <input id="tags" value="{{.Tags}}" placeholder="add tags" spellcheck="false" />
+      </div>
+      <!-- the newline after <textarea> is dropped by the browser, so a body
+           starting with a blank line keeps it -->
+      <textarea id="body">
+{{.Body}}</textarea>
+    </main>
+    <div id="status"></div>
+
+    <script>
+      const tags = document.getElementById("tags");
+      const body = document.getElementById("body");
+      const status = document.getElementById("status");
+
+      const snapshot = () => JSON.stringify({ tags: tags.value, body: body.value });
+      let saved = snapshot(); // what's on disk
+      let failed = false;
+      let timer;
+      let saving = Promise.resolve(); // saves run one at a time so an older one never lands last
+
+      function show(text, error = false) {
+        status.textContent = text;
+        status.classList.toggle("error", error);
+      }
+
+      function save() {
+        clearTimeout(timer);
+        saving = saving.then(write);
+        return saving;
+      }
+
+      async function write() {
+        const current = snapshot();
+        if (current === saved) return;
+        try {
+          const res = await fetch("save", { method: "POST", body: current });
+          if (!res.ok) throw new Error(res.statusText);
+          saved = current;
+          failed = false;
+          show("saved");
+        } catch {
+          failed = true;
+          show("not saved — retrying", true);
+          timer = setTimeout(save, 3000);
+        }
+      }
+
+      function edited() {
+        if (!failed) show("");
+        clearTimeout(timer);
+        timer = setTimeout(save, 1000);
+      }
+
+      tags.addEventListener("input", edited);
+      body.addEventListener("input", edited);
+      tags.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") body.focus();
+      });
+      document.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+          e.preventDefault();
+          save();
+        }
+      });
+
+      // closing the window: send anything unsaved, and warn if saving is broken
+      addEventListener("pagehide", () => {
+        if (snapshot() !== saved) navigator.sendBeacon("save", snapshot());
+      });
+      addEventListener("beforeunload", (e) => {
+        if (failed) e.preventDefault();
+      });
+
+      // the server exits once this connection has been gone for a few seconds
+      new EventSource("alive");
+
+      // pick up where the last entry ends
+      body.focus({ preventScroll: true });
+      body.setSelectionRange(body.value.length, body.value.length);
+      scrollTo(0, document.body.scrollHeight);
+    </script>
+  </body>
+</html>
